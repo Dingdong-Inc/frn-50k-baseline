@@ -11,6 +11,7 @@ def ssa_predict(demand_df, target_col='sale_amount'):
     # calendar feature
     all_data['time_idx'] = (pd.to_datetime(all_data['dt']) - pd.to_datetime(all_data['dt']).min()).dt.days
     all_data['dow'] = pd.to_datetime(all_data['dt']).dt.dayofweek
+    all_data.loc[all_data['dt'].isin(['2024-05-02','2024-05-03','2024-05-04']), 'holiday_flag']=0
     all_data.loc[all_data['holiday_flag']==1, 'dow'] = 5
     all_data.loc[(all_data['holiday_flag']==0)&(all_data['dow'].isin([5,6])), 'dow'] = 0
     # precipitation feature
@@ -60,9 +61,9 @@ def ssa_predict(demand_df, target_col='sale_amount'):
     pdf[f'ssa_pred_{target_col}'] = pred.reshape(-1)
     # overall
     metric = pd.concat([
-        evaluation(pdf, 'psd>=0'), # overall
-        evaluation(pdf, 'psd<1'), # low sale
-        evaluation(pdf, 'psd>=1'), # high sale
+        evaluation(pdf, 'psd>=0', target_col), # overall
+        evaluation(pdf, 'psd<1', target_col), # low sale
+        evaluation(pdf, 'psd>=1', target_col), # high sale
     ], axis=0)
     print(metric)
 
