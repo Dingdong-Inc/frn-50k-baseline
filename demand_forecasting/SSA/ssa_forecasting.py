@@ -3,7 +3,7 @@ import numpy as np
 from datasets import load_dataset
 import argparse
 
-def ssa_predict(demand_df):
+def ssa_predict(demand_df, target_col='sale_amount'):
     dataset = load_dataset("Dingdong-Inc/FreshRetailNet-50K")
     eval_df = dataset['eval'].to_pandas()
     all_data = pd.concat([demand_df, eval_df], axis=0)
@@ -16,7 +16,7 @@ def ssa_predict(demand_df):
     # precipitation feature
     all_data['is_precpt'] = (all_data['precpt']>3.5).astype(int)
     # continuouse and catigorical variables
-    x_cont = all_data[['time_idx', 'discount', 'sale_amount', 'sale_amount_pred']].values.reshape(-1, 97, 4)
+    x_cont = all_data[['time_idx', 'discount', target_col]].values.reshape(-1, 97, 3)
     x_cat = all_data[['dow', 'holiday_flag', 'is_precpt']].values.reshape(-1, 97, 3)
     # config
     max_encoder_length=90
@@ -50,16 +50,14 @@ def ssa_predict(demand_df):
     all_data = all_data.merge(mu, on=['store_id', 'product_id'], how='left')
 
     pdf = all_data.query("dt>='2024-06-26'").copy()
-    target_cols = ['sale_amount', 'sale_amount_pred']
-    for target_col in target_cols:
-        target_idx = target_cols.index(target_col)+2
-        target = x_cont[:, :max_encoder_length, target_idx:target_idx+1]
-        index = encoder_dow.squeeze()[...,None] == np.arange(6)
-        mean_sale = np.nanmean(np.where(index, target, np.nan), axis=1) + 0.001
-        season_ratio = np.nanmedian(mean_sale[...,None] / mean_sale[:,None,...], axis=0)
-        ratio = season_ratio[decoder_dow, encoder_dow]
-        pred = (weight * ratio)@target
-        pdf[f'ssa_pred_{target_col}'] = pred.reshape(-1)
+    target_idx = 2
+    target = x_cont[:, :max_encoder_length, target_idx:target_idx+1]
+    index = encoder_dow.squeeze()[...,None] == np.arange(6)
+    mean_sale = np.nanmean(np.where(index, target, np.nan), axis=1) + 0.001
+    season_ratio = np.nanmedian(mean_sale[...,None] / mean_sale[:,None,...], axis=0)
+    ratio = season_ratio[decoder_dow, encoder_dow]
+    pred = (weight * ratio)@target
+    pdf[f'ssa_pred_{target_col}'] = pred.reshape(-1)
     # overall
     metric = pd.concat([
         evaluation(pdf, 'psd>=0'), # overall
@@ -68,22 +66,28 @@ def ssa_predict(demand_df):
     ], axis=0)
     print(metric)
 
-def evaluation(pdf, condition='psd>=0'):
+def evaluation(pdf, condition='psd>=0', target_col='sale_amount'):
     res = []
-    for pred_col in ['ssa_pred_sale_amount', 'ssa_pred_sale_amount_pred']:
-        wape_list,mae_list,wpe_list = [],[],[]
-        for target_dt, subdf in pdf.query('stock_hour6_22_cnt==0').query(condition).groupby('dt'):
-            mae = (subdf['sale_amount'] - subdf[pred_col]).abs().sum()
-            wape = mae / subdf['sale_amount'].sum()
-            wape_list.append(wape)
-            mae_list.append((subdf['sale_amount'] - subdf[pred_col]).abs().mean())
-            wpe_list.append((subdf[pred_col]-subdf['sale_amount']).sum()/subdf['sale_amount'].sum())
-        res.append(pd.DataFrame({'demand':[pred_col], 'wape':[round(np.mean(wape_list),4)], 'wpe':[round(np.mean(wpe_list),4)], 'mae':[round(np.mean(mae_list),4)]}))
+    pred_col = f'ssa_pred_{target_col}'
+    wape_list,mae_list,wpe_list = [],[],[]
+    for target_dt, subdf in pdf.query('stock_hour6_22_cnt==0').query(condition).groupby('dt'):
+        mae = (subdf['sale_amount'] - subdf[pred_col]).abs().sum()
+        wape = mae / subdf['sale_amount'].sum()
+        wape_list.append(wape)
+        mae_list.append((subdf['sale_amount'] - subdf[pred_col]).abs().mean())
+        wpe_list.append((subdf[pred_col]-subdf['sale_amount']).sum()/subdf['sale_amount'].sum())
+    res.append(pd.DataFrame({'demand':[pred_col], 'wape':[round(np.mean(wape_list),4)], 'wpe':[round(np.mean(wpe_list),4)], 'mae':[round(np.mean(mae_list),4)]}))
     metric = pd.concat(res)
     metric['group'] = condition
     metric = metric[['group', 'demand', 'wape', 'wpe', 'mae']]
     return metric
 
+def load_data(path):
+    if path:
+        dataset = load_dataset("Dingdong-Inc/FreshRetailNet-50K")
+        data = dataset['train'].to_pandas()
+    return data
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -92,6 +96,17 @@ if __name__ == '__main__':
         default='../../latent_demand_recovery/exp/demand/demand.parquet',
         help="demand data path, default '../../latent_demand_recovery/exp/demand/demand.parquet'"
     )
+    parser.add_argument(
+        "--demand",
+        action='store_true',
+        help="use recoverd demand or not"
+    )
     args = parser.parse_args()
-    demand_df = pd.read_parquet(args.demand_path)
-    ssa_predict(demand_df)
+    if args.demand:
+        target_col = 'sale_amount_pred'
+        demand_df = pd.read_parquet(args.demand_path)
+    else:
+        target_col = 'sale_amount'
+        dataset = load_dataset("Dingdong-Inc/FreshRetailNet-50K")
+        demand_df = dataset['train'].to_pandas()
+    ssa_predict(demand_df, target_col)

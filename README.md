@@ -41,8 +41,12 @@ python app.py --model 'TimesNet'
 >
 ```bash
 cd demand_forecasting/SSA
-# Perform demand forecasting on censored sales and recovered demand (which requires running Latent Demand Recovery first) using the similar scenario average method (statistics-based)
+## Perform demand forecasting on censored sales or recovered demand using the similar scenario average method (statistics-based)
+# Perform demand forecasting on censored sales
 python ssa_forecasting.py
+# Perform demand forecasting on recovered demand, which requires running Latent Demand Recovery first: python app.py --model 'TimesNet'
+python ssa_forecasting.py --demand
+
 ```
 
 - TFT
