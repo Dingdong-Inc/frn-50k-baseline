@@ -55,6 +55,8 @@ def _imputation(CONFIG):
     imputation = np.where(imputation>0, imputation, 0)
     model_name = CONFIG['model']
     missing_rate = CONFIG['missing_rate']
+    if not os.path.exists('./demand'):
+        os.makedirs('./demand', exist_ok=True)
     np.save(f'./demand/{model_name}_imputation_{missing_rate}.npy', imputation)
     if CONFIG['missing_rate']>0:
         evaluation_mnar(train_set['X'], imputation)
@@ -71,6 +73,8 @@ def _demand_recovery(imputation):
     hours_sale_origin[...,6:22] = imputation.reshape(-1, 30, 16)
     sale_amount_pred = hours_sale_origin.sum(axis=-1).reshape(-1, 90)
     data[f'sale_amount_pred'] = sale_amount_pred.reshape(-1)
+    if not os.path.exists('./demand'):
+        os.makedirs('./demand', exist_ok=True)
     data.to_parquet(f'./demand/demand.parquet')
     return data
     
