@@ -118,7 +118,7 @@ def evaluation_decoupling(data):
     corr = corr.reset_index().merge(mu, on=['store_id', 'product_id']).merge(stock_nunique.query('nunique>3'), on=['store_id', 'product_id', 'holiday_flag'])
     metric = pd.DataFrame({
             'method':['sale_amount', 'sale_amount_pred'],
-            'decouling score':np.nansum(corr[['sale_amount', 'sale_amount_pred']].values * corr[['mu']].values, axis=0)/corr['mu'].sum()
+            'decoupling score':np.nansum(corr[['sale_amount', 'sale_amount_pred']].values * corr[['mu']].values, axis=0)/corr['mu'].sum()
              })
     print(metric)
     
