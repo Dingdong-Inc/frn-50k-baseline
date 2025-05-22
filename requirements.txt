@@ -1,8 +1,9 @@
 numpy==1.23.5
-torch==1.13.1
+torch==2.0.1
 pytorch-lightning==1.9.4
-pytorch-forecasting==0.10.3
+pytorch-forecasting==1.0.0
 datasets==3.1.0
+tensorboard==2.14.0
 pygrinder==0.4
 h5py==3.9.0
 tsdb==0.3.1
