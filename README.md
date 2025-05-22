@@ -30,30 +30,31 @@ Links to the corresponding papers for each model are provided below:
 ```bash
 cd latent_demand_recovery/exp
 # Conduct MNAR evaluation on different models with various artificial missing rates, such as model=TimesNet and missing_rate=0.3
-python app.py --model 'TimesNet' --missing_rate 0.3
+python app.py --model TimesNet --missing_rate 0.3
 # Perform demand recovery on raw data, reconstructing demand from censored sales
-python app.py --model 'TimesNet'
+python app.py --model TimesNet
 ```
 
 
-### Forcasting
+### Demand Forcasting
 - SSA
->
+> The similar scenario average (SSA) is a common method (statistics-based) for demand forecasting.
 ```bash
 cd demand_forecasting/SSA
-## Perform demand forecasting on censored sales or recovered demand using the similar scenario average method (statistics-based)
+
 # Perform demand forecasting on censored sales
 python ssa_forecasting.py
-# Perform demand forecasting on recovered demand, which requires running Latent Demand Recovery first: python app.py --model 'TimesNet'
-python ssa_forecasting.py --demand
 
+# Perform demand forecasting on recovered demand, which requires running Latent Demand Recovery first.
+# For example, python app.py --model TimesNet
+python ssa_forecasting.py --demand
 ```
 
 - TFT
 >Temporal Fusion Transformer (TFT) is a novel attention-based architecture which combines high-performance multi-horizon forecasting with interpretable insights into temporal dynamics.
 >Paper link: https://arxiv.org/abs/1912.09363
 
-To train and evaluate easily on raw data, run:
+To train and evaluate easily on censored sales, run:
 ```bash
 cd tft
 python3 trainTFT.py    # train models
