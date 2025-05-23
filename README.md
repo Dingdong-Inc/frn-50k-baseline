@@ -39,6 +39,8 @@ python app.py --model TimesNet
 ### Demand Forcasting
 #### SSA
 > The similar scenario average (SSA) is a common method (statistics-based) for demand forecasting.
+
+To train and evaluate easily on censored/recovered sales, run:
 ```bash
 cd demand_forecasting/SSA
 
@@ -54,7 +56,7 @@ python ssa_forecasting.py --demand
 > Temporal Fusion Transformer (TFT) is a novel attention-based architecture which combines high-performance multi-horizon forecasting with interpretable insights into temporal dynamics.
 > - Paper link: [*Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting*](https://arxiv.org/abs/1912.09363)
 
-To train and evaluate easily on censored sales, run:
+To train and evaluate easily on censored/recovered sales, run:
 ```bash
 cd demand_forecasting/TFT
 
@@ -64,14 +66,16 @@ python3 predictTFT.py  # evaluate after finishing trainning
 
 # Perform demand forecasting on recovered demand, which requires running Latent Demand Recovery first.
 # For example, python app.py --model TimesNet
+python3 trainTFT.py --demand
+python3 predictTFT.py --demand
 ```
 
 #### DLinear
 > DLinear is a set of embarrassingly simple one-layer linear models named LTSF-Linear for the long-term time series forecasting (LTSF) task.
 > - Paper link: [*Are Transformers Effective for Time Series Forecasting?*](https://ojs.aaai.org/index.php/AAAI/article/view/26317)
-> - Code link: https://github.com/cure-lab/LTSF-Linear
+> - Reference Code link: https://github.com/cure-lab/LTSF-Linear
 
-To train and evaluate easily on censored sales, run:
+To train and evaluate easily on censored/recovered sales, run:
 ```bash
 cd demand_forecasting/DLinear
 

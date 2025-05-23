@@ -9,6 +9,7 @@ from models.tft.model import TemporalFusionTransformer
 import time
 from datetime import datetime, timedelta
 from datasets import load_dataset
+import argparse
 
 config.date = '2024-06-26'
 config.quantiles = 7
@@ -19,11 +20,18 @@ config.dataset_config["max_encoder_length"] = 70
 target_dates = pd.date_range(start = config.date, periods = config.dataset_config["max_prediction_length"])
 target_dates = [date.strftime("%Y-%m-%d") for date in target_dates]
 
-def loadDataset():
+def loadDataset(data_type='censored', data_path=None):
     t0 = time.time()
     dataset = load_dataset("Dingdong-Inc/FreshRetailNet-50K")
     df_train = dataset['train'].to_pandas()
     df_eval = dataset['eval'].to_pandas()
+    df_train_psd = df_train.groupby(config.dataset_config['group_ids'])['sale_amount'].mean().to_frame('psd') # average daily sales amount
+    df_eval = pd.merge(df_eval, df_train_psd, on = config.dataset_config['group_ids'])
+
+    if data_type == 'recovered':
+        df_train = pd.read_parquet(data_path)
+        df_train['sale_amount'] = df_train['sale_amount_pred']
+
     df = pd.concat([df_train, df_eval], ignore_index=True)
     df['day_of_week'] = df['dt'].apply(lambda x : datetime.strptime(x, '%Y-%m-%d').weekday())
     df.loc[df.dt >= config.date, 'sale_amount'] = np.nan
@@ -31,8 +39,6 @@ def loadDataset():
     t1 = time.time()
     print(f"dataset generation cost {t1-t0}")
 
-    df_train_psd = df_train.groupby(config.dataset_config['group_ids'])['sale_amount'].mean().to_frame('psd') # average daily sales amount
-    df_eval = pd.merge(df_eval, df_train_psd, on = config.dataset_config['group_ids'])
     return dataset, df_train, df_eval
 
 def do_predict(dataset, model_path, df_eval, verbose=False):
@@ -102,20 +108,20 @@ def get_sorted_files(directory='.'):
     sorted_files = sorted(files)
     return sorted_files
 
-def get_pred(dataset, df_eval, v_num, data_type, start_epoch=0, verbose=False):
-    model_dir = f"./lightning_logs/version_{v_num}/checkpoints"
+def get_pred(dataset, df_eval, data_type, start_epoch=0, verbose=False):
+    model_dir = f"./lightning_logs/{data_type}/checkpoints"
     files = get_sorted_files(model_dir)
     df_pred = []
     for idx, file in enumerate(files):
         epoch_num = file.split('-')[0].split('=')[1]
         if start_epoch == -1:
             if idx + 1 == len(files):
-                _data_type = f"{data_type}_{v_num}_{epoch_num}"
+                _data_type = f"{data_type}_epoch{epoch_num}"
                 print(_data_type)
                 df_pred.append((_data_type, do_predict(dataset, os.path.join(model_dir, file), df_eval, verbose)))
         else:
-            if epoch_num >= start_epoch:
-                _data_type = f"{data_type}_{v_num}_{epoch_num}"
+            if int(epoch_num) >= start_epoch:
+                _data_type = f"{data_type}_epoch{epoch_num}"
                 print(_data_type)
                 df_pred.append((_data_type, do_predict(dataset, os.path.join(model_dir, file), df_eval, verbose)))
     return df_pred
@@ -127,9 +133,29 @@ def get_metrics(df_pred, groups=["psd>=0"]):
         df_res = pd.concat([df_res, df_], axis=0, ignore_index=True)
     return df_res
 
-dataset_raw, df_train, df_eval = loadDataset()
-df_pred = get_pred(dataset_raw, df_eval, v_num=0, data_type='raw', start_epoch=-1, verbose=True)
-df_res = get_metrics(df_pred, ["psd>=0", "psd>=1", "psd<1"])
-df_res.to_parquet("./raw_res_v0_last_epoch.parquet")
 
-print(df_res.groupby(['group_type', 'data_type']).mean(numeric_only=True))
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--demand_path",
+        type=str,
+        default='../../latent_demand_recovery/exp/demand/demand.parquet',
+        help="demand data path, default '../../latent_demand_recovery/exp/demand/demand.parquet'"
+    )
+    parser.add_argument(
+        "--demand",
+        action='store_true',
+        help="use recoverd demand or not"
+    )
+    args = parser.parse_args()
+    if args.demand:
+        data_type = 'recovered'
+    else:
+        data_type = 'censored'
+
+    dataset, df_train, df_eval = loadDataset(data_type, args.demand_path)
+    df_pred = get_pred(dataset, df_eval, data_type, start_epoch=-1, verbose=True)
+    df_res = get_metrics(df_pred, ["psd>=0", "psd>=1", "psd<1"])
+    df_res.to_parquet(f"./{data_type}_res_last_epoch.parquet")
+
+    print(df_res.groupby(['group_type', 'data_type']).mean(numeric_only=True))
