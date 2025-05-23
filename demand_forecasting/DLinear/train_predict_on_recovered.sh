@@ -17,7 +17,7 @@ python -u main.py \
     --scale True \
     --loss 'mae' \
     --features "MS" \
-    --data "recovery_dataset" \
+    --data "recovered_dataset" \
     --data_path "../../latent_demand_recovery/exp/demand/demand.parquet" \
     --target "sale_amount_pred" \
     --revin False \
