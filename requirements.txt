@@ -1,4 +1,5 @@
 numpy==1.23.5
+pandas==1.5.3
 torch==2.0.1
 pytorch-lightning==1.9.4
 pytorch-forecasting==1.0.0
