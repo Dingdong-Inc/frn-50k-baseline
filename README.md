@@ -3,7 +3,7 @@
 ## Overview
 The Repo is a baseline for Dataset [FreshRetailNet-50K](https://huggingface.co/datasets/Dingdong-Inc/FreshRetailNet-50K), which accesses the complete pipeline used to train and evaluate.
 
-You can discover the methodology and technical details behind FreshRetailNet-50K in [Technical Report](https://openreview.net/pdf?id=ObqFw6ah94)
+You can discover the methodology and technical details behind FreshRetailNet-50K in [Technical Report](https://arxiv.org/abs/2505.16319)
 
 ## Running Experiments
 
