@@ -1,9 +1,9 @@
 # frn-50k-baseline
 
 ## Overview
-The Repo is a baseline for Dataset [FreshRetailNet-50K](https://huggingface.co/datasets/Dingdong-Inc/FreshRetailNet-50K), which accesses the complete pipeline used to train and evaluate.
+The Repo is a baseline for Dataset [FreshRetailNet-50K](https://huggingface.co/datasets/Dingdong-Inc/FreshRetailNet-50K), which provides the complete pipeline used to train and evaluate.
 
-You can discover the methodology and technical details behind FreshRetailNet-50K in [Technical Report](https://arxiv.org/abs/2505.16319)
+You can discover the methodology and technical details behind FreshRetailNet-50K in [Technical Report](https://arxiv.org/abs/2505.16319).
 
 ## Running Experiments
 
@@ -55,6 +55,7 @@ python ssa_forecasting.py --demand
 #### TFT
 > Temporal Fusion Transformer (TFT) is a novel attention-based architecture which combines high-performance multi-horizon forecasting with interpretable insights into temporal dynamics.
 > - Paper link: [*Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting*](https://arxiv.org/abs/1912.09363)
+> - Reference Code link: https://github.com/sktime/pytorch-forecasting
 
 To train and evaluate easily on censored/recovered sales, run:
 ```bash
@@ -66,8 +67,8 @@ python3 predictTFT.py  # evaluate after finishing trainning
 
 # Perform demand forecasting on recovered demand, which requires running Latent Demand Recovery first.
 # For example, python app.py --model TimesNet
-python3 trainTFT.py --demand
-python3 predictTFT.py --demand
+python3 trainTFT.py --demand     # train models
+python3 predictTFT.py --demand   # evaluate after finishing trainning
 ```
 
 #### DLinear
@@ -85,4 +86,20 @@ sh train_predict.sh
 # Perform demand forecasting on recovered demand, which requires running Latent Demand Recovery first.
 # For example, python app.py --model TimesNet
 sh train_predict_on_recovered.sh
+```
+
+
+## Citation
+
+If you find the data useful, please cite:
+```
+@article{2025freshretailnet-50k,
+      title={FreshRetailNet-50K: A Stockout-Annotated Censored Demand Dataset for Latent Demand Recovery and Forecasting in Fresh Retail},
+      author={Yangyang Wang, Jiawei Gu, Li Long, Xin Li, Li Shen, Zhouyu Fu, Xiangjun Zhou, Xu Jiang},
+      year={2025},
+      eprint={2505.16319},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2505.16319},
+}
 ```
