@@ -46,9 +46,10 @@ class Dataset:
 
     def gen_predict_df(self, df):
         encoder_data = df.dropna(subset=[self.config.dataset_config["target"]]).loc[:]
+        encoder_data["time_idx_max"] = encoder_data.groupby(self.config.dataset_config["group_ids"])['time_idx'].transform('max')
         encoder_data = encoder_data[
             lambda x: x.time_idx
-            > x.time_idx.max() - self.config.dataset_config["max_encoder_length"]
+            > x.time_idx_max - self.config.dataset_config["max_encoder_length"]
         ]
         decoder_data = df[df[self.config.dataset_config["target"]].isnull()]
         decoder_data[self.config.dataset_config["target"]] = decoder_data[
